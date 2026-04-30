@@ -1,28 +1,43 @@
+import { useEffect, useState } from "react";
+
 function App() {
+  const [servers, setServers] = useState([]);
+
+  // Fetch servers from backend
+  const fetchServers = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/servers");
+      const data = await res.json();
+      setServers(data);
+    } catch (error) {
+      console.error("Error fetching servers:", error);
+    }
+  };
+
+  // Run on page load
+  useEffect(() => {
+    fetchServers();
+  }, []);
+
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <h1>🚀 SmartDB Pro</h1>
-      <p>AI Powered MySQL Optimization Platform</p>
+    <div style={{ padding: "20px" }}>
+      <h1>SmartDB Pro Dashboard</h1>
 
-      <hr />
+      <h2>Connected Servers</h2>
 
-      <h2>Dashboard</h2>
-
-      <div style={{ marginTop: "20px" }}>
-        <p>✅ Servers Connected: 0</p>
-        <p>✅ Health Score: Good</p>
-        <p>✅ Benchmarks Run: 0</p>
-        <p>✅ AI Suggestions Ready</p>
-      </div>
-
-      <button style={{
-        padding: "10px 20px",
-        marginTop: "20px",
-        cursor: "pointer"
-      }}>
-        Add Server
-      </button>
+      {servers.length === 0 ? (
+        <p>No servers found</p>
+      ) : (
+        <ul>
+          {servers.map((server) => (
+            <li key={server.id}>
+              {server.name} - {server.host}:{server.port}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
+
 export default App;
