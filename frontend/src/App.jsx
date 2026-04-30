@@ -85,7 +85,10 @@ function App() {
           {servers.map((server) => (
             <li key={server.id}>
               {server.name} - {server.host}:{server.port}
-            </li>
+              <button onClick={() => deleteServer(server.id)}>
+              Delete
+              </button>
+</li>
           ))}
         </ul>
       )}
