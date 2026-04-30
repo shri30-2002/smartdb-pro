@@ -7,6 +7,7 @@ function App() {
     host: "",
     port: ""
   });
+  const [editingId, setEditingId] = useState(null);
 
   // Fetch servers
   const fetchServers = async () => {
@@ -37,11 +38,32 @@ function App() {
       body: JSON.stringify(form)
     });
 
-    // Refresh list
     fetchServers();
-
-    // Clear form
     setForm({ name: "", host: "", port: "" });
+  };
+
+  // Delete server
+  const deleteServer = async (id) => {
+    await fetch(`http://127.0.0.1:8000/delete-server/${id}`, {
+      method: "DELETE"
+    });
+
+    fetchServers();
+  };
+
+  // Update server
+  const updateServer = async () => {
+    await fetch(`http://127.0.0.1:8000/update-server/${editingId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(form)
+    });
+
+    setEditingId(null);
+    setForm({ name: "", host: "", port: "" });
+    fetchServers();
   };
 
   return (
@@ -75,7 +97,7 @@ function App() {
       <br /><br />
 
       <button onClick={editingId ? updateServer : addServer}>
-          {editingId ? "Update Server" : "Add Server"}
+        {editingId ? "Update Server" : "Add Server"}
       </button>
 
       <h2>Connected Servers</h2>
@@ -86,23 +108,23 @@ function App() {
         <ul>
           {servers.map((server) => (
             <li key={server.id}>
-                {server.name} - {server.host}:{server.port}
+              {server.name} - {server.host}:{server.port}
 
-                <button onClick={() => {
-                  setEditingId(server.id);
-                  setForm({
-                    name: server.name,
-                    host: server.host,
-                    port: server.port
-                  });
-                }}>
-                  Edit
-                </button>
+              <button onClick={() => {
+                setEditingId(server.id);
+                setForm({
+                  name: server.name,
+                  host: server.host,
+                  port: server.port
+                });
+              }}>
+                Edit
+              </button>
 
-                <button onClick={() => deleteServer(server.id)}>
-                  Delete
-                </button>
-              </li>
+              <button onClick={() => deleteServer(server.id)}>
+                Delete
+              </button>
+            </li>
           ))}
         </ul>
       )}
@@ -111,28 +133,3 @@ function App() {
 }
 
 export default App;
-
-const deleteServer = async (id) => {
-  await fetch(`http://127.0.0.1:8000/delete-server/${id}`, {
-    method: "DELETE"
-  });
-
-  fetchServers(); // refresh UI
-};
-
-
-const [editingId, setEditingId] = useState(null);
-
-const updateServer = async () => {
-  await fetch(`http://127.0.0.1:8000/update-server/${editingId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(form)
-  });
-
-  setEditingId(null);
-  setForm({ name: "", host: "", port: "" });
-  fetchServers();
-};
