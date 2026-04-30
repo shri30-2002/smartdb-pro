@@ -44,3 +44,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.delete("/delete-server/{server_id}")
+def delete_server(server_id: int):
+    db = SessionLocal()
+
+    server = db.query(Server).filter(Server.id == server_id).first()
+
+    if not server:
+        return {"error": "Server not found"}
+
+    db.delete(server)
+    db.commit()
+
+    return {"message": "Server deleted"}
