@@ -1,15 +1,17 @@
-from database import engine
-from models import Base
-from fastapi import FastAPI
+from database import SessionLocal
+from models import Server
 
-Base.metadata.create_all(bind=engine)
+@app.post("/add-server")
+def add_server(data: dict):
+    db = SessionLocal()
 
-app = FastAPI(title="SmartDB Pro API")
+    new_server = Server(
+        name=data["name"],
+        host=data["host"],
+        port=data["port"]
+    )
 
-@app.get("/")
-def home():
-    return {"message": "SmartDB Pro Backend Running"}
+    db.add(new_server)
+    db.commit()
 
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
+    return {"message": "Server added"}
