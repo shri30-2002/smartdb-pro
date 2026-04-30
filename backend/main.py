@@ -1,14 +1,11 @@
 from fastapi import FastAPI
 from database import engine, SessionLocal
 from models import Base, Server
+from schemas import ServerCreate   # ✅ NEW
 
-# Step 1: Create app FIRST
 app = FastAPI(title="SmartDB Pro API")
 
-# Step 2: Create tables
 Base.metadata.create_all(bind=engine)
-
-# Step 3: Routes
 
 @app.get("/")
 def home():
@@ -19,13 +16,13 @@ def health():
     return {"status": "healthy"}
 
 @app.post("/add-server")
-def add_server(data: dict):
+def add_server(data: ServerCreate):   # ✅ FIXED
     db = SessionLocal()
 
     new_server = Server(
-        name=data["name"],
-        host=data["host"],
-        port=data["port"]
+        name=data.name,   # ✅ changed
+        host=data.host,
+        port=data.port
     )
 
     db.add(new_server)
