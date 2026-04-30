@@ -75,8 +75,8 @@ function App() {
       <br /><br />
 
       <button onClick={editingId ? updateServer : addServer}>
-  {editingId ? "Update Server" : "Add Server"}
-</button>
+          {editingId ? "Update Server" : "Add Server"}
+      </button>
 
       <h2>Connected Servers</h2>
 
@@ -86,23 +86,23 @@ function App() {
         <ul>
           {servers.map((server) => (
             <li key={server.id}>
-  {server.name} - {server.host}:{server.port}
+                {server.name} - {server.host}:{server.port}
 
-  <button onClick={() => {
-    setEditingId(server.id);
-    setForm({
-      name: server.name,
-      host: server.host,
-      port: server.port
-    });
-  }}>
-    Edit
-  </button>
+                <button onClick={() => {
+                  setEditingId(server.id);
+                  setForm({
+                    name: server.name,
+                    host: server.host,
+                    port: server.port
+                  });
+                }}>
+                  Edit
+                </button>
 
-  <button onClick={() => deleteServer(server.id)}>
-    Delete
-  </button>
-</li>
+                <button onClick={() => deleteServer(server.id)}>
+                  Delete
+                </button>
+              </li>
           ))}
         </ul>
       )}
