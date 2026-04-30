@@ -94,3 +94,11 @@ function App() {
 }
 
 export default App;
+
+const deleteServer = async (id) => {
+  await fetch(`http://127.0.0.1:8000/delete-server/${id}`, {
+    method: "DELETE"
+  });
+
+  fetchServers(); // refresh UI
+};
