@@ -67,69 +67,118 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>SmartDB Pro Dashboard</h1>
+  <div style={{
+    fontFamily: "Arial",
+    background: "#f5f7fb",
+    minHeight: "100vh",
+    padding: "30px"
+  }}>
 
-      <h2>Add Server</h2>
+    <h1 style={{ marginBottom: "20px" }}>
+      🚀 SmartDB Pro Dashboard
+    </h1>
+
+    {/* FORM CARD */}
+    <div style={{
+      background: "white",
+      padding: "20px",
+      borderRadius: "10px",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+      marginBottom: "30px"
+    }}>
+      <h2>{editingId ? "Edit Server" : "Add Server"}</h2>
 
       <input
         name="name"
         placeholder="Server Name"
         value={form.name}
         onChange={handleChange}
+        style={{ display: "block", marginBottom: "10px", padding: "8px", width: "300px" }}
       />
-      <br /><br />
 
       <input
         name="host"
         placeholder="Host"
         value={form.host}
         onChange={handleChange}
+        style={{ display: "block", marginBottom: "10px", padding: "8px", width: "300px" }}
       />
-      <br /><br />
 
       <input
         name="port"
         placeholder="Port"
         value={form.port}
         onChange={handleChange}
+        style={{ display: "block", marginBottom: "10px", padding: "8px", width: "300px" }}
       />
-      <br /><br />
 
-      <button onClick={editingId ? updateServer : addServer}>
+      <button
+        onClick={editingId ? updateServer : addServer}
+        style={{
+          padding: "10px 20px",
+          background: "#4CAF50",
+          color: "white",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer"
+        }}
+      >
         {editingId ? "Update Server" : "Add Server"}
       </button>
+    </div>
 
-      <h2>Connected Servers</h2>
+    {/* SERVER LIST */}
+    <h2>Connected Servers</h2>
 
-      {servers.length === 0 ? (
-        <p>No servers found</p>
-      ) : (
-        <ul>
-          {servers.map((server) => (
-            <li key={server.id}>
-              {server.name} - {server.host}:{server.port}
+    {servers.length === 0 ? (
+      <p>No servers found</p>
+    ) : (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
+        {servers.map((server) => (
+          <div key={server.id} style={{
+            background: "white",
+            padding: "15px",
+            borderRadius: "10px",
+            width: "250px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+          }}>
+            <h3>{server.name}</h3>
+            <p>{server.host}:{server.port}</p>
 
-              <button onClick={() => {
+            <button
+              onClick={() => {
                 setEditingId(server.id);
                 setForm({
                   name: server.name,
                   host: server.host,
                   port: server.port
                 });
-              }}>
-                Edit
-              </button>
+              }}
+              style={{
+                marginRight: "10px",
+                padding: "5px 10px"
+              }}
+            >
+              Edit
+            </button>
 
-              <button onClick={() => deleteServer(server.id)}>
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+            <button
+              onClick={() => deleteServer(server.id)}
+              style={{
+                padding: "5px 10px",
+                background: "red",
+                color: "white",
+                border: "none"
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
 }
 
 export default App;
