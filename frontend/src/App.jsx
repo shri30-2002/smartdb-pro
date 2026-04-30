@@ -2,26 +2,79 @@ import { useEffect, useState } from "react";
 
 function App() {
   const [servers, setServers] = useState([]);
+  const [form, setForm] = useState({
+    name: "",
+    host: "",
+    port: ""
+  });
 
-  // Fetch servers from backend
+  // Fetch servers
   const fetchServers = async () => {
-    try {
-      const res = await fetch("http://127.0.0.1:8000/servers");
-      const data = await res.json();
-      setServers(data);
-    } catch (error) {
-      console.error("Error fetching servers:", error);
-    }
+    const res = await fetch("http://127.0.0.1:8000/servers");
+    const data = await res.json();
+    setServers(data);
   };
 
-  // Run on page load
   useEffect(() => {
     fetchServers();
   }, []);
 
+  // Handle input change
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  // Add server
+  const addServer = async () => {
+    await fetch("http://127.0.0.1:8000/add-server", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(form)
+    });
+
+    // Refresh list
+    fetchServers();
+
+    // Clear form
+    setForm({ name: "", host: "", port: "" });
+  };
+
   return (
     <div style={{ padding: "20px" }}>
       <h1>SmartDB Pro Dashboard</h1>
+
+      <h2>Add Server</h2>
+
+      <input
+        name="name"
+        placeholder="Server Name"
+        value={form.name}
+        onChange={handleChange}
+      />
+      <br /><br />
+
+      <input
+        name="host"
+        placeholder="Host"
+        value={form.host}
+        onChange={handleChange}
+      />
+      <br /><br />
+
+      <input
+        name="port"
+        placeholder="Port"
+        value={form.port}
+        onChange={handleChange}
+      />
+      <br /><br />
+
+      <button onClick={addServer}>Add Server</button>
 
       <h2>Connected Servers</h2>
 
