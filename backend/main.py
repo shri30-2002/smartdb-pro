@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from database import engine, SessionLocal
 from models import Base, Server
 from schemas import ServerCreate   # ✅ NEW
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SmartDB Pro API")
 
@@ -35,3 +36,11 @@ def get_servers():
     db = SessionLocal()
     servers = db.query(Server).all()
     return servers
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
