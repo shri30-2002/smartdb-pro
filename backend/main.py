@@ -59,3 +59,21 @@ def delete_server(server_id: int):
     db.commit()
 
     return {"message": "Server deleted"}
+
+
+@app.put("/update-server/{server_id}")
+def update_server(server_id: int, data: dict):
+    db = SessionLocal()
+
+    server = db.query(Server).filter(Server.id == server_id).first()
+
+    if not server:
+        return {"error": "Server not found"}
+
+    server.name = data["name"]
+    server.host = data["host"]
+    server.port = data["port"]
+
+    db.commit()
+
+    return {"message": "Server updated"}
