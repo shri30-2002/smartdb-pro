@@ -32,3 +32,9 @@ def add_server(data: dict):
     db.commit()
 
     return {"message": "Server added"}
+
+@app.get("/servers")
+def get_servers():
+    db = SessionLocal()
+    servers = db.query(Server).all()
+    return servers
