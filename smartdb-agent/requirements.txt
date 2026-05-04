@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+psycopg2
+pymysql
+sqlalchemy
+pandas
+jinja2
+reportlab
+python-dotenv
