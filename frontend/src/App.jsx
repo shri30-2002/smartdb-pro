@@ -1,220 +1,367 @@
+import { useEffect, useState } from "react";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid
+  CartesianGrid,
+  ResponsiveContainer
 } from "recharts";
-import { useEffect, useState } from "react";
 
 function App() {
-  const [servers, setServers] = useState([]);
-  const [form, setForm] = useState({
-    name: "",
-    host: "",
-    port: ""
-  });
-  const [editingId, setEditingId] = useState(null);
+  /* ---------------- AUTH ---------------- */
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem("token")
+  );
 
-  // Fetch servers
-  const fetchServers = async () => {
-    const res = await fetch("http://127.0.0.1:8000/servers");
-    const data = await res.json();
-    setServers(data);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  const handleLogin = async () => {
+    try {
+      const res = await fetch(
+        "http://127.0.0.1:8000/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
+        }
+      );
+
+      const result = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem(
+          "token",
+          result.access_token
+        );
+
+        setIsLoggedIn(true);
+        setLoginError("");
+      } else {
+        setLoginError(result.detail);
+      }
+    } catch (error) {
+      setLoginError("Server error");
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    setEmail("");
+    setPassword("");
+  };
+
+  /* ---------------- DASHBOARD ---------------- */
+  const [data, setData] = useState({
+    cpu: 0,
+    ram: 0,
+    disk: 0,
+    database_status: "Checking..."
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(
+        "http://127.0.0.1:8000/scan"
+      );
+
+      const result = await res.json();
+
+      setData(result);
+      setLoading(false);
+
+      const currentTime =
+        new Date().toLocaleTimeString();
+
+      setHistory((prev) => [
+        ...prev.slice(-9),
+        {
+          time: currentTime,
+          cpu: result.cpu,
+          ram: result.ram,
+          disk: result.disk
+        }
+      ]);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
-    fetchServers();
-  }, []);
+    if (isLoggedIn) {
+      fetchStats();
 
-  // Handle input change
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+      const interval = setInterval(() => {
+        fetchStats();
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
+
+  /* ---------------- ALERTS ---------------- */
+  const alerts = [];
+
+  if (data.cpu > 80)
+    alerts.push(`⚠ High CPU Usage: ${data.cpu}%`);
+
+  if (data.ram > 85)
+    alerts.push(`⚠ High RAM Usage: ${data.ram}%`);
+
+  if (data.disk > 90)
+    alerts.push(
+      `⚠ Disk Almost Full: ${data.disk}%`
+    );
+
+  if (data.database_status !== "Running")
+    alerts.push("❌ PostgreSQL Offline");
+
+  const cardStyle = {
+    background: "rgba(255,255,255,0.08)",
+    padding: "25px",
+    borderRadius: "18px",
+    width: "240px",
+    color: "white"
   };
 
-  // Add server
-  const addServer = async () => {
-    await fetch("http://127.0.0.1:8000/add-server", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(form)
-    });
-
-    fetchServers();
-    setForm({ name: "", host: "", port: "" });
+  const valueStyle = {
+    fontSize: "34px",
+    fontWeight: "bold",
+    marginTop: "10px"
   };
 
-  // Delete server
-  const deleteServer = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
-
-    await fetch(`http://127.0.0.1:8000/delete-server/${id}`, {
-      method: "DELETE"
-    });
-
-    fetchServers();
-  };
-
-  // Update server
-  const updateServer = async () => {
-    await fetch(`http://127.0.0.1:8000/update-server/${editingId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(form)
-    });
-
-    setEditingId(null);
-    setForm({ name: "", host: "", port: "" });
-    fetchServers();
-  };
-
-  // Chart Data
-  const chartData = servers.map((s, index) => ({
-    name: s.name || `Server ${index + 1}`,
-    value: index + 1
-  }));
-
-  return (
-    <div style={{
-      fontFamily: "Arial",
-      background: "#f5f7fb",
-      minHeight: "100vh",
-      padding: "30px"
-    }}>
-
-      <h1>🚀 SmartDB Pro Dashboard</h1>
-
-      {/* STATS */}
-      <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "10px",
-          width: "200px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-        }}>
-          <h3>Total Servers</h3>
-          <p style={{ fontSize: "24px" }}>{servers.length}</p>
-        </div>
-
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "10px",
-          width: "200px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-        }}>
-          <h3>Active Servers</h3>
-          <p style={{ fontSize: "24px" }}>{servers.length}</p>
-        </div>
-      </div>
-
-      {/* CHART */}
-      <div style={{
-        background: "white",
-        padding: "20px",
-        borderRadius: "10px",
-        marginBottom: "30px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-      }}>
-        <h2>Server Analytics</h2>
-
-        <BarChart width={500} height={300} data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="value" />
-        </BarChart>
-      </div>
-
-      {/* FORM */}
-      <div style={{
-        background: "white",
-        padding: "20px",
-        borderRadius: "10px",
-        marginBottom: "30px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-      }}>
-        <h2>{editingId ? "Edit Server" : "Add Server"}</h2>
-
-        <input
-          name="name"
-          placeholder="Server Name"
-          value={form.name}
-          onChange={handleChange}
-          style={{ display: "block", marginBottom: "10px", padding: "8px", width: "300px" }}
-        />
-
-        <input
-          name="host"
-          placeholder="Host"
-          value={form.host}
-          onChange={handleChange}
-          style={{ display: "block", marginBottom: "10px", padding: "8px", width: "300px" }}
-        />
-
-        <input
-          name="port"
-          placeholder="Port"
-          value={form.port}
-          onChange={handleChange}
-          style={{ display: "block", marginBottom: "10px", padding: "8px", width: "300px" }}
-        />
-
-        <button
-          onClick={editingId ? updateServer : addServer}
+  /* ---------------- LOGIN SCREEN ---------------- */
+  if (!isLoggedIn) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background:
+            "linear-gradient(135deg,#0f172a,#111827,#1e293b)"
+        }}
+      >
+        <div
           style={{
-            padding: "10px 20px",
-            background: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "5px"
+            width: "380px",
+            padding: "35px",
+            borderRadius: "18px",
+            background:
+              "rgba(255,255,255,0.08)",
+            color: "white"
           }}
         >
-          {editingId ? "Update Server" : "Add Server"}
+          <h1>🔐 SmartDB Login</h1>
+
+          <input
+            placeholder="Email"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "12px",
+              marginTop: "20px",
+              marginBottom: "15px"
+            }}
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "12px",
+              marginBottom: "15px"
+            }}
+          />
+
+          <button
+            onClick={handleLogin}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            Login
+          </button>
+
+          {loginError && (
+            <p
+              style={{
+                color: "red",
+                marginTop: "15px"
+              }}
+            >
+              {loginError}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------- DASHBOARD ---------------- */
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        padding: "40px",
+        background:
+          "linear-gradient(135deg,#0f172a,#111827,#1e293b)",
+        color: "white"
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent:
+            "space-between",
+          marginBottom: "30px"
+        }}
+      >
+        <div>
+          <h1>🚀 SmartDB Pro Dashboard</h1>
+          <p>
+            Secure JWT Login Enabled
+          </p>
+        </div>
+
+        <button
+          onClick={logout}
+          style={{
+            padding: "10px 18px",
+            background: "#ef4444",
+            color: "white",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          Logout
         </button>
       </div>
 
-      {/* SERVER LIST */}
-      <h2>Connected Servers</h2>
+      {/* Alerts */}
+      {!loading && (
+        <div
+          style={{
+            marginBottom: "25px",
+            padding: "18px",
+            borderRadius: "14px",
+            background:
+              alerts.length > 0
+                ? "rgba(239,68,68,0.18)"
+                : "rgba(34,197,94,0.18)"
+          }}
+        >
+          <h3>
+            {alerts.length > 0
+              ? "🚨 Alerts"
+              : "✅ Healthy"}
+          </h3>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
-        {servers.map((server) => (
-          <div key={server.id} style={{
-            background: "white",
-            padding: "15px",
-            borderRadius: "10px",
-            width: "250px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-          }}>
-            <h3>{server.name}</h3>
-            <p>{server.host}:{server.port}</p>
+          {alerts.length > 0 ? (
+            alerts.map((a, i) => (
+              <p key={i}>{a}</p>
+            ))
+          ) : (
+            <p>All systems normal.</p>
+          )}
+        </div>
+      )}
 
-            <button onClick={() => {
-              setEditingId(server.id);
-              setForm(server);
-            }}>
-              Edit
-            </button>
+      {loading ? (
+        <h2>Loading...</h2>
+      ) : (
+        <>
+          {/* Cards */}
+          <div
+            style={{
+              display: "flex",
+              gap: "25px",
+              flexWrap: "wrap",
+              marginBottom: "40px"
+            }}
+          >
+            <div style={cardStyle}>
+              <h3>CPU</h3>
+              <div style={valueStyle}>
+                {data.cpu}%
+              </div>
+            </div>
 
-            <button
-              onClick={() => deleteServer(server.id)}
-              style={{ marginLeft: "10px", background: "red", color: "white" }}
-            >
-              Delete
-            </button>
+            <div style={cardStyle}>
+              <h3>RAM</h3>
+              <div style={valueStyle}>
+                {data.ram}%
+              </div>
+            </div>
+
+            <div style={cardStyle}>
+              <h3>Disk</h3>
+              <div style={valueStyle}>
+                {data.disk}%
+              </div>
+            </div>
+
+            <div style={cardStyle}>
+              <h3>Database</h3>
+              <div style={valueStyle}>
+                {data.database_status}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
+
+          {/* Chart */}
+          <ResponsiveContainer
+            width="100%"
+            height={350}
+          >
+            <LineChart data={history}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                dataKey="cpu"
+                stroke="#3b82f6"
+              />
+              <Line
+                dataKey="ram"
+                stroke="#22c55e"
+              />
+              <Line
+                dataKey="disk"
+                stroke="#f59e0b"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </>
+      )}
     </div>
   );
 }
