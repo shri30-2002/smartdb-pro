@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from scanner import scan_server
+from scanner import scan_server, servers, save_servers
 import jwt
 import datetime
 
@@ -20,21 +20,28 @@ app.add_middleware(
 SECRET_KEY = "smartdb_secret_key"
 ALGORITHM = "HS256"
 
-# Demo user
 ADMIN_EMAIL = "admin@smartdb.com"
 ADMIN_PASSWORD = "admin123"
 
-# ---------------- LOGIN MODEL ----------------
+# ---------------- MODELS ----------------
 class LoginData(BaseModel):
     email: str
     password: str
+
+
+class ServerData(BaseModel):
+    name: str
+    host: str
+    port: int
+
 
 # ---------------- HOME ----------------
 @app.get("/")
 def home():
     return {"message": "SmartDB Agent Running"}
 
-# ---------------- LOGIN API ----------------
+
+# ---------------- LOGIN ----------------
 @app.post("/login")
 def login(user: LoginData):
     if (
@@ -43,8 +50,8 @@ def login(user: LoginData):
     ):
         payload = {
             "sub": user.email,
-            "exp": datetime.datetime.utcnow() +
-                   datetime.timedelta(hours=2)
+            "exp": datetime.datetime.utcnow()
+            + datetime.timedelta(hours=2)
         }
 
         token = jwt.encode(
@@ -54,8 +61,7 @@ def login(user: LoginData):
         )
 
         return {
-            "access_token": token,
-            "token_type": "bearer"
+            "access_token": token
         }
 
     raise HTTPException(
@@ -63,7 +69,70 @@ def login(user: LoginData):
         detail="Invalid credentials"
     )
 
-# ---------------- PROTECTED SCAN ----------------
+
+# ---------------- SCAN ----------------
 @app.get("/scan")
 def scan():
     return scan_server()
+
+
+# ---------------- GET SERVERS ----------------
+@app.get("/servers")
+def get_servers():
+    return servers
+
+
+# ---------------- ADD SERVER ----------------
+@app.post("/add-server")
+def add_server(server: ServerData):
+    servers.append({
+        "name": server.name,
+        "host": server.host,
+        "port": server.port
+    })
+
+    save_servers(servers)
+
+    return {
+        "message": "Server Added Successfully"
+    }
+
+
+# ---------------- DELETE SERVER ----------------
+@app.delete("/delete-server/{index}")
+def delete_server(index: int):
+    if index < 0 or index >= len(servers):
+        raise HTTPException(
+            status_code=404,
+            detail="Server not found"
+        )
+
+    deleted = servers.pop(index)
+
+    save_servers(servers)
+
+    return {
+        "message": "Server deleted",
+        "server": deleted
+    }
+
+# ---------------- UPDATE SERVER ----------------
+@app.put("/update-server/{index}")
+def update_server(index: int, server: ServerData):
+    if index < 0 or index >= len(servers):
+        raise HTTPException(
+            status_code=404,
+            detail="Server not found"
+        )
+
+    servers[index] = {
+        "name": server.name,
+        "host": server.host,
+        "port": server.port
+    }
+
+    save_servers(servers)
+
+    return {
+        "message": "Server updated successfully"
+    }

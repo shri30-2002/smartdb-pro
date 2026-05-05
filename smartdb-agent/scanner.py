@@ -1,70 +1,73 @@
 import psutil
 import socket
+import json
+import os
 
-# ---------------- SERVER LIST ----------------
-servers = [
-    {
-        "name": "Local PostgreSQL",
-        "host": "127.0.0.1",
-        "port": 5432
-    },
-    {
-        "name": "Local MySQL",
-        "host": "127.0.0.1",
-        "port": 3306
-    },
-    {
-        "name": "Test Server",
-        "host": "8.8.8.8",
-        "port": 53
-    }
-]
+FILE_NAME = "servers.json"
 
-# ---------------- CHECK ONE SERVER ----------------
-def check_database(host, port):
-    sock = socket.socket(
-        socket.AF_INET,
-        socket.SOCK_STREAM
-    )
+# ---------------- LOAD SERVERS ----------------
+def load_servers():
+    if not os.path.exists(FILE_NAME):
+        return []
 
+    with open(FILE_NAME, "r") as file:
+        return json.load(file)
+
+# ---------------- SAVE SERVERS ----------------
+def save_servers(data):
+    with open(FILE_NAME, "w") as file:
+        json.dump(data, file, indent=2)
+
+# Global server list
+servers = load_servers()
+
+# ---------------- MAIN SCAN ----------------
+def scan_server(host="127.0.0.1", port=5432):
+    result = {}
+
+    # CPU
+    result["cpu"] = psutil.cpu_percent(interval=1)
+
+    # RAM
+    result["ram"] = psutil.virtual_memory().percent
+
+    # Disk
+    result["disk"] = psutil.disk_usage("/").percent
+
+    # PostgreSQL Main DB Check
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(2)
 
     try:
         sock.connect((host, port))
-        sock.close()
-        return "Running"
+        result["database_status"] = "Running"
     except:
-        sock.close()
-        return "Offline"
+        result["database_status"] = "Offline"
 
-# ---------------- MAIN SCAN ----------------
-def scan_server():
-    result = {}
+    sock.close()
 
-    # Machine Stats
-    result["cpu"] = psutil.cpu_percent(interval=1)
-    result["ram"] = psutil.virtual_memory().percent
-    result["disk"] = psutil.disk_usage("/").percent
-
-    # Multi Servers
-    result["servers"] = []
+    # ---------------- MULTI SERVER CHECK ----------------
+    checked_servers = []
 
     for server in servers:
-        status = check_database(
-            server["host"],
-            server["port"]
-        )
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
 
-        result["servers"].append({
+        try:
+            sock.connect((server["host"], server["port"]))
+            status = "Running"
+        except:
+            status = "Offline"
+
+        sock.close()
+
+        checked_servers.append({
             "name": server["name"],
             "host": server["host"],
             "port": server["port"],
             "status": status
         })
 
-    # First server quick status
-    result["database_status"] = result[
-        "servers"
-    ][0]["status"]
+    result["servers"] = checked_servers
 
     return result
